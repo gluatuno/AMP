@@ -1,0 +1,14 @@
+# Downloaded references and large intermediates
+resources/*
+!resources/.gitkeep
+results/*
+!results/.gitkeep
+
+# Conda / Snakemake internals
+.snakemake/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

@@ -1,0 +1,10 @@
+name: amp-annotate
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.9
+  - deepsig>=1.2      # signal-peptide prediction (eukaryotic model: -k euk)
+  # Alternatives if deepsig is unavailable in your channel set:
+  #   - signalp6 (academic licence, pip install from DTU)
+  #   - phobius   (academic licence)

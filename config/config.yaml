@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------
+# AMP genomics pipeline configuration
+# ---------------------------------------------------------------------------
+# Input: mature antimicrobial-peptide amino-acid sequences (FASTA).
+# Track: HUMAN (map back to GRCh38).
+# ---------------------------------------------------------------------------
+
+input_peptides: "data/human_amp.fasta"
+
+# Output / working locations
+outdir: "results"
+resources_dir: "resources"
+
+# Reference downloads (Ensembl GRCh38 + UniProt human reference proteome).
+# Pin the release so results are reproducible.
+reference:
+  ensembl_release: 113
+  genome_fasta_url: "https://ftp.ensembl.org/pub/release-113/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+  gff3_url:         "https://ftp.ensembl.org/pub/release-113/gff3/homo_sapiens/Homo_sapiens.GRCh38.113.gff3.gz"
+  # UniProt human reference proteome (UP000005640). Precursors come from here.
+  uniprot_human_url: "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640/UP000005640_9606.fasta.gz"
+
+params:
+  threads: 8
+  # Homology (mature peptide -> full precursor protein)
+  diamond_evalue: 1.0e-5
+  diamond_min_pident: 90     # mature peptide should match its precursor almost exactly
+  min_query_cov: 0.80        # fraction of the mature peptide that must align
+  # Region definition
+  dibasic_motifs: ["KR", "RR", "RK", "KK"]  # convertase cleavage hints for pro/mature boundary
+
+# Curated map of AMP family -> trans-acting processing enzyme gene(s).
+# Human AMPs are NOT organized as bacterial operons, so the "Enzyme" (Method 4)
+# and "Transporter" blocks are separate loci. Edit this table freely.
+enzyme_table: "config/processing_enzymes.tsv"

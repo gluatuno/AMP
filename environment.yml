@@ -1,0 +1,21 @@
+name: amp-genomics
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.10
+  - snakemake-minimal>=7.32
+  - diamond>=2.1          # peptide -> precursor homology search
+  - miniprot>=0.13        # splice-aware protein -> genome alignment
+  - samtools>=1.19        # faidx on the reference genome
+  - bedtools>=2.31        # getfasta for region extraction
+  - gffread>=0.12         # gene-model / transcript extraction
+  - seqkit>=2.6           # FASTA manipulation & dedup
+  - cd-hit>=4.8           # redundancy reduction of mature peptides
+  - deepsig>=1.2          # signal-peptide prediction (eukaryotic)
+  - pandas>=2.0
+  - biopython>=1.81
+  - wget
+  # Optional / heavy (uncomment if you want domain annotation):
+  # - hmmer>=3.3           # hmmscan vs Pfam
+  # - interproscan         # full domain/family annotation (large)

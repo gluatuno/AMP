@@ -1,0 +1,13 @@
+# Curated AMP-family -> processing enzyme / transporter loci (human).
+# Used for Method 4 (Enzyme) and the trans-acting part of Method 5.
+# These are SEPARATE genes in the human genome, not operon neighbours.
+# Columns: family_regex   role        gene_symbol   note
+# family_regex is matched (case-insensitive) against the precursor gene symbol/name.
+cathelicidin|CAMP	enzyme	PRTN3	proteinase-3 cleaves hCAP18 -> LL-37 in neutrophils
+cathelicidin|CAMP	enzyme	KLK5	kallikrein-5 processes hCAP18 in skin
+defensin|DEFA	enzyme	MMP7	matrilysin activates enteric alpha-defensins (cryptdins)
+defensin|DEFB	enzyme	FURIN	proprotein convertase, generic pro-region removal
+histatin|HTN|HRNR	enzyme	.	salivary processing; fill in if known
+dermcidin|DCD	enzyme	CTSD	cathepsin-D processing (skin)
+.*	enzyme	FURIN	default proprotein convertase (dibasic sites)
+.*	transporter	ABCA1	default lipid/peptide export ABC transporter (placeholder)

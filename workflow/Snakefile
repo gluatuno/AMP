@@ -1,0 +1,37 @@
+# ===========================================================================
+# AMP genomics pipeline  --  mature AMP peptides -> genomic DNA + features
+# ===========================================================================
+# Input : mature antimicrobial-peptide amino-acid sequences (FASTA)
+# Output: for every peptide that maps to a human precursor gene, the genomic
+#         DNA for each feature block in the reference figure:
+#           Method 1  AMP (mature)          -> results/methods/method1_amp.fa
+#           Method 2  Pro-peptide           -> results/methods/method2_propeptide.fa
+#           Method 3  Pro-peptide + AMP      -> results/methods/method3_pro_plus_amp.fa
+#           Method 4  Enzyme (trans-acting) -> results/methods/method4_enzyme.fa
+#           Method 5  Transporter..AMP span -> results/methods/method5_locus.fa
+# ===========================================================================
+
+configfile: "config/config.yaml"
+
+OUT = config["outdir"]
+RES = config["resources_dir"]
+
+wildcard_constraints:
+    method = r"method[1-5]"
+
+rule all:
+    input:
+        # Final per-method genomic DNA + a summary report
+        expand(OUT + "/methods/{m}.fa", m=[
+            "method1_amp", "method2_propeptide", "method3_pro_plus_amp",
+            "method4_enzyme", "method5_locus"]),
+        OUT + "/report/pipeline_summary.tsv",
+        OUT + "/report/precursor_feature_map.tsv",
+
+# Modular rule files
+include: "rules/references.smk"
+include: "rules/prep.smk"
+include: "rules/homology.smk"
+include: "rules/genome_map.smk"
+include: "rules/annotate.smk"
+include: "rules/methods.smk"

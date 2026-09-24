@@ -1,0 +1,105 @@
+# AMP genomics pipeline
+
+Recover **genomic DNA and genomic features** for human antimicrobial peptides
+(AMPs) starting from their **mature amino-acid sequences**.
+
+Input: `data/human_amp.fasta` — 171 mature AMP peptides (APD-style IDs such as
+`AP00307` = cathelicidin/LL-37, `AP00451` = a defensin, `AP00509` = histatin).
+
+## The idea
+
+Mature AMPs are the *processed* products of larger precursors. To get back to
+DNA and to the feature blocks in the reference figure, the pipeline walks
+backward:
+
+```
+mature peptide (aa)
+   → full-length precursor protein        (DIAMOND blastp vs human proteome)
+   → genome, splice-aware                 (miniprot → CDS/exon model on GRCh38)
+   → genomic DNA per feature block         (aa coords → genomic BED → bedtools)
+   → precursor feature annotation          (deepsig signal peptide + pro/mature)
+   → trans-acting enzyme / transporter     (curated table → Ensembl GFF3 loci)
+```
+
+### Why two tracks (important biology)
+
+The figure's layout — **Transporter · Enzyme · Pro-peptide · AMP** in a row — is
+the classic *microbial* AMP/bacteriocin **biosynthetic gene cluster (operon)**.
+**Human** host-defense peptides are organised differently: one gene encodes a
+single precursor (**signal peptide → pro-region → mature AMP**), while the
+processing enzyme and any transporter are **separate genes elsewhere**. So:
+
+* **Methods 1–3 & 5 (cis):** derived from the *same* precursor gene.
+* **Method 4 (trans):** the enzyme (and transporter) are looked up as separate
+  loci via `config/processing_enzymes.tsv` (edit this table freely).
+
+> If your real input is *microbial*, the right tools are **antiSMASH** and
+> **BAGEL4**, which call the operon directly. This repo implements the human
+> track you selected.
+
+## Figure "Methods" → pipeline outputs
+
+| Method | Figure target        | Output file                                   | How |
+|:------:|----------------------|-----------------------------------------------|-----|
+| 1 | AMP (mature)              | `results/methods/method1_amp.fa`              | exonic DNA of the mature-peptide codons |
+| 2 | Pro-peptide              | `results/methods/method2_propeptide.fa`       | exonic DNA between signal peptide and mature |
+| 3 | Pro-peptide + AMP         | `results/methods/method3_pro_plus_amp.fa`     | exonic DNA of pro-region through mature |
+| 4 | Enzyme (trans-acting)    | `results/methods/method4_enzyme.fa` (+`.tsv`) | processing-enzyme/transporter gene loci |
+| 5 | Transporter…AMP locus     | `results/methods/method5_locus.fa`            | whole precursor gene envelope (introns incl.) |
+
+Plus reports: `results/report/pipeline_summary.tsv` and
+`results/report/precursor_feature_map.tsv` (per-peptide aa coordinates + which
+methods yielded sequence).
+
+## Install
+
+```bash
+conda env create -f environment.yml
+conda activate amp-genomics
+# (Snakemake also creates per-rule envs from workflow/envs/ when run with --use-conda)
+```
+
+## Run
+
+```bash
+# Dry run — see the DAG without executing
+snakemake -n --use-conda
+
+# Full run (downloads GRCh38 + Ensembl GFF3 + UniProt human on first use)
+snakemake --use-conda --cores 8
+```
+
+Pin releases and tune thresholds in `config/config.yaml`
+(`diamond_min_pident`, `min_query_cov`, Ensembl release, etc.).
+
+## Layout
+
+```
+config/
+  config.yaml                 # paths, reference URLs, thresholds
+  processing_enzymes.tsv      # curated AMP-family → enzyme/transporter genes (Method 4)
+workflow/
+  Snakefile
+  rules/       references, prep, homology, genome_map, annotate, methods
+  scripts/     best_hit_precursor, define_regions, extract_methods,
+               enzyme_loci, make_report
+  envs/        core.yaml, annotate.yaml
+data/human_amp.fasta          # input peptides
+resources/                    # downloaded references (gitignored)
+results/                      # outputs (gitignored)
+```
+
+## Notes & limitations
+
+* **Multi-exon features** (Methods 1–3) emit one FASTA record per exon
+  (`...|ex1`, `...|ex2`); concatenate by shared name for the full coding
+  sequence. Most short mature AMPs fall within a single exon.
+* **Signal-peptide caller:** `deepsig` (eukaryotic model). Swap in SignalP 6.0
+  or Phobius in `workflow/envs/annotate.yaml` if you have a licence.
+* **Coordinate model** assumes miniprot's best-scoring, in-frame alignment per
+  precursor; frameshifted/partial alignments are approximated and flagged.
+* **Method 4** enzyme assignments in `processing_enzymes.tsv` are a curated
+  starting point (e.g. PRTN3/KLK5 for cathelicidin, MMP7 for enteric
+  α-defensins, FURIN as a generic convertase) — refine per your biology.
+* Optional domain annotation (InterProScan/Pfam) is stubbed in
+  `environment.yml`; enable if you want family-level calls.
