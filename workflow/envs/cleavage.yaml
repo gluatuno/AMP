@@ -1,0 +1,9 @@
+name: amp-cleavage
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.10
+  - pandas>=2.0
+  - biopython>=1.81
+  - meme>=5.5        # STREME/MEME for de-novo cut-site motif discovery

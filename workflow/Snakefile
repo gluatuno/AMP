@@ -27,6 +27,12 @@ rule all:
             "method4_enzyme", "method5_locus"]),
         OUT + "/report/pipeline_summary.tsv",
         OUT + "/report/precursor_feature_map.tsv",
+        # Cleavage-site signatures (discovery + prediction + genome track)
+        OUT + "/cleavage/candidate_sites.tsv",
+        OUT + "/cleavage/denovo/motif_report.tsv",
+        OUT + "/cleavage/predicted_regions.tsv",
+        OUT + "/cleavage/boundary_accuracy.tsv",
+        OUT + "/cleavage/cutsites.bed",
 
 # Modular rule files
 include: "rules/references.smk"
@@ -35,3 +41,4 @@ include: "rules/homology.smk"
 include: "rules/genome_map.smk"
 include: "rules/annotate.smk"
 include: "rules/methods.smk"
+include: "rules/cleavage.smk"

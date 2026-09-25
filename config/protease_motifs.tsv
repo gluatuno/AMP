@@ -1,0 +1,23 @@
+# Curated protease cleavage-site signatures (knowledge-based scan).
+# Columns: enzyme  role  regex  cut_offset  note
+#   regex      : Python regex over the PRECURSOR protein (may use lookaheads).
+#   cut_offset : residues from the match start to the scissile bond; the bond
+#                is C-terminal to residue (match_start + cut_offset). For a
+#                zero-width lookahead anchor, cut_offset counts anchor residues.
+# These are STARTING POINTS from MEROPS/PROSITE-style specificity; the de-novo
+# MEME/STREME step refines/replaces them from your own data.
+#
+# --- Proprotein convertases (pro-region removal) --------------------------
+FURIN	convertase	R.[KR]R	4	furin/PACE minimal R-X-[K/R]-R down-arrow
+FURIN_min	convertase	R..R	4	relaxed furin R-X-X-R
+PCSK_dibasic	convertase	[KR][KR]	2	PC1/3, PC2 dibasic KR/RR/KK/RK
+# --- Kallikreins (skin; cathelicidin / KLK cascade) -----------------------
+KLK5	serine	[KR](?=[^P])	1	tryptic-like, cut after K/R (not before P)
+KLK7	serine	[YFWL](?=[^P])	1	chymotryptic-like, cut after aromatic/Leu
+KLK14	serine	[KR](?=[^P])	1	tryptic-like
+# --- Neutrophil serine proteases (hCAP18 -> LL-37 release) ----------------
+PRTN3	serine	[AVSCT](?=[LIVF])	1	proteinase-3/elastase-like, small P1 before hydrophobic
+# --- Matrix metalloproteinase (enteric alpha-defensin activation) ---------
+MMP7	metallo	[ASTGN](?=[LIVMFY])	1	matrilysin, small P1 before bulky hydrophobic P1'
+# --- Aspartic protease (dermcidin processing) -----------------------------
+CTSD	aspartic	[FLM](?=[FLYWM])	1	cathepsin-D, hydrophobic-hydrophobic

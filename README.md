@@ -51,6 +51,32 @@ Plus reports: `results/report/pipeline_summary.tsv` and
 `results/report/precursor_feature_map.tsv` (per-peptide aa coordinates + which
 methods yielded sequence).
 
+## Cleavage-site signatures (enzyme "cutting sites" in the genome)
+
+Proteases act on the precursor **protein**, but their cleavage motifs are
+encoded in the genomic CDS — so a "cutting site" can be found as a sequence
+signature and projected back to a genomic coordinate. This module does that in
+three parts:
+
+1. **Find** — `scan_cleavage.py` scans every precursor with a curated protease
+   motif library (`config/protease_motifs.tsv`: furin/PCSK dibasic, KLK5/7/14,
+   PRTN3, MMP7, cathepsin-D), and `discover_cutsites.py` learns the motifs
+   *de novo* from your own signal→pro and pro→mature junctions (position-
+   frequency matrix always; STREME/MEME when the `cleavage` env is used).
+2. **Predict** — `predict_boundaries.py` calls signal/pro/mature boundaries
+   from the signatures **alone** (no known mature peptide needed), so the
+   pipeline generalises to novel precursors. Because the true boundaries are
+   known here, it also writes a **precision/recall** report
+   (`boundary_accuracy.tsv`: boundary accuracy + scanner recall).
+3. **Annotate** — `cutsites_to_genome.py` maps each cleavage bond through the
+   miniprot CDS model to a genomic base, producing a 1-bp **cut-site BED track**
+   (`cutsites.bed`) you can load in a browser next to Methods 1–5.
+
+Outputs land in `results/cleavage/`:
+`candidate_sites.tsv`, `denovo/motif_report.tsv`, `predicted_regions.tsv`
+(feeds `extract_methods.py` for novel inputs), `boundary_accuracy.tsv`,
+`cutsites.bed`.
+
 ## Install
 
 ```bash
@@ -78,12 +104,14 @@ Pin releases and tune thresholds in `config/config.yaml`
 config/
   config.yaml                 # paths, reference URLs, thresholds
   processing_enzymes.tsv      # curated AMP-family → enzyme/transporter genes (Method 4)
+  protease_motifs.tsv         # curated protease cleavage-site signatures
 workflow/
   Snakefile
-  rules/       references, prep, homology, genome_map, annotate, methods
-  scripts/     best_hit_precursor, define_regions, extract_methods,
-               enzyme_loci, make_report
-  envs/        core.yaml, annotate.yaml
+  rules/       references, prep, homology, genome_map, annotate, methods, cleavage
+  scripts/     best_hit_precursor, define_regions, gmap, extract_methods,
+               enzyme_loci, scan_cleavage, discover_cutsites,
+               predict_boundaries, cutsites_to_genome, make_report
+  envs/        core.yaml, annotate.yaml, cleavage.yaml
 data/human_amp.fasta          # input peptides
 resources/                    # downloaded references (gitignored)
 results/                      # outputs (gitignored)
@@ -103,3 +131,7 @@ results/                      # outputs (gitignored)
   α-defensins, FURIN as a generic convertase) — refine per your biology.
 * Optional domain annotation (InterProScan/Pfam) is stubbed in
   `environment.yml`; enable if you want family-level calls.
+* **Cleavage motifs** in `protease_motifs.tsv` are specificity-based starting
+  points; the de-novo step is meant to refine/replace them from your data. The
+  predictor assumes the mature peptide runs to the C-terminus (v1) — precursors
+  with a C-terminal pro-segment need an extra downstream cut rule.

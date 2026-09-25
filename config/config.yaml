@@ -28,8 +28,15 @@ params:
   min_query_cov: 0.80        # fraction of the mature peptide that must align
   # Region definition
   dibasic_motifs: ["KR", "RR", "RK", "KK"]  # convertase cleavage hints for pro/mature boundary
+  # Cleavage-site prediction (predict_boundaries.py)
+  min_mature_len: 5
+  max_mature_len: 120
+  boundary_tol: 2            # residues of slack when scoring predicted vs true boundary
 
 # Curated map of AMP family -> trans-acting processing enzyme gene(s).
 # Human AMPs are NOT organized as bacterial operons, so the "Enzyme" (Method 4)
 # and "Transporter" blocks are separate loci. Edit this table freely.
 enzyme_table: "config/processing_enzymes.tsv"
+
+# Curated protease cleavage-site signatures used by the cleavage module.
+protease_motifs: "config/protease_motifs.tsv"
