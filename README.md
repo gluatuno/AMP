@@ -72,10 +72,37 @@ three parts:
    miniprot CDS model to a genomic base, producing a 1-bp **cut-site BED track**
    (`cutsites.bed`) you can load in a browser next to Methods 1–5.
 
+The candidate sites are then **rescored** by a trained model
+(`train_cleavage_model.py` → `score_sites.py`): a log-odds **PWM** learned from
+the true junctions, plus a **logistic-regression** classifier over one-hot +
+physicochemical window features when scikit-learn is available (reports
+cross-validated AUC in `model/metrics.tsv`; PWM-only otherwise). The boundary
+predictor also trims a **C-terminal pro-segment** when a downstream cut leaves a
+net-anionic tail — so mature ends are called correctly for precursors whose
+pro-region is C-terminal, not just N-terminal.
+
 Outputs land in `results/cleavage/`:
-`candidate_sites.tsv`, `denovo/motif_report.tsv`, `predicted_regions.tsv`
-(feeds `extract_methods.py` for novel inputs), `boundary_accuracy.tsv`,
-`cutsites.bed`.
+`candidate_sites.tsv`, `candidate_sites_scored.tsv`, `denovo/motif_report.tsv`,
+`model/{pwm.tsv,metrics.tsv,model.pkl}`, `predicted_regions.tsv` (feeds
+`extract_methods.py` for novel inputs; carries `mature_end_source` =
+`terminus`/`cterm_cut`), `boundary_accuracy.tsv`, `cutsites.bed`.
+
+## Cis-regulatory layer — shared promoter signatures
+
+Beyond the protein-encoded cut sites, the AMP gene and its processing enzyme
+may be **co-regulated at the DNA level**. This module (`rules/regulatory.smk`)
+extracts the promoter (`[TSS-upstream, TSS+downstream]`) of every AMP gene and
+its paired enzyme/transporter gene (`extract_promoters.py`), scans both strands
+for TF binding motifs (`config/tf_motifs.tsv`: VDR/RXR — the cathelicidin
+vitamin-D element — NF-κB, C/EBP, AP-1, STAT, ISRE, HNF4), and reports the
+motifs **shared between each co-regulated pair** (`shared_tfbs.py`), plus a
+genome-mapped TFBS BED track. Outputs in `results/regulatory/`:
+`shared_signatures.tsv` (per AMP↔enzyme pair: shared / AMP-only / enzyme-only
+TFs), `tfbs_hits.tsv`, `tfbs.bed`.
+
+The scan uses a deterministic IUPAC-consensus match (both strands, ≤N
+mismatches) — a dependency-free baseline; drop in JASPAR PWMs + FIMO for
+calibrated scoring. Keep consensus motifs ≥7 bp (shorter ones match too often).
 
 ## Install
 
@@ -105,12 +132,16 @@ config/
   config.yaml                 # paths, reference URLs, thresholds
   processing_enzymes.tsv      # curated AMP-family → enzyme/transporter genes (Method 4)
   protease_motifs.tsv         # curated protease cleavage-site signatures
+  tf_motifs.tsv               # curated TF binding motifs (cis-regulatory layer)
 workflow/
   Snakefile
-  rules/       references, prep, homology, genome_map, annotate, methods, cleavage
+  rules/       references, prep, homology, genome_map, annotate, methods,
+               cleavage, regulatory
   scripts/     best_hit_precursor, define_regions, gmap, extract_methods,
                enzyme_loci, scan_cleavage, discover_cutsites,
-               predict_boundaries, cutsites_to_genome, make_report
+               cleavage_features, train_cleavage_model, score_sites,
+               predict_boundaries, cutsites_to_genome,
+               extract_promoters, shared_tfbs, make_report
   envs/        core.yaml, annotate.yaml, cleavage.yaml
 data/human_amp.fasta          # input peptides
 resources/                    # downloaded references (gitignored)
@@ -132,6 +163,11 @@ results/                      # outputs (gitignored)
 * Optional domain annotation (InterProScan/Pfam) is stubbed in
   `environment.yml`; enable if you want family-level calls.
 * **Cleavage motifs** in `protease_motifs.tsv` are specificity-based starting
-  points; the de-novo step is meant to refine/replace them from your data. The
-  predictor assumes the mature peptide runs to the C-terminus (v1) — precursors
-  with a C-terminal pro-segment need an extra downstream cut rule.
+  points; the de-novo step and the trained PWM/ML scorer refine them from your
+  data. The boundary predictor now trims C-terminal pro-segments when the tail
+  is net-anionic (`mature_end_source=cterm_cut`).
+* **Cut-site model:** logistic-regression when scikit-learn is present, else a
+  log-odds PWM; both trained on the known junctions with random-bond negatives.
+  Small precursor sets give optimistic AUC — validate on held-out families.
+* **TFBS scan** is a consensus baseline; co-regulation calls are hypotheses to
+  confirm with JASPAR PWMs + FIMO and expression/ChIP evidence.

@@ -5,13 +5,15 @@
 Model:
   signal_end     = deepsig signal-peptide cleavage
   pro->mature    = best convertase/protease cut C-terminal to the signal,
-                   scored by enzyme priority + cationicity of the resulting
-                   mature candidate + a plausible-length term
-  mature_end     = C-terminus (v1 assumption)
+                   ranked by enzyme priority + model/PWM score + cationicity of
+                   the resulting mature candidate + a plausible-length term
+  mature_end     = C-terminus, UNLESS a downstream cut leaves a low-cationicity
+                   C-terminal pro-segment (then trim to that cut)
 
-Emits a predicted regions table in the SAME schema as define_regions.py, so it
-can feed extract_methods.py for precursors with no known mature. When a
-ground-truth regions table is given, writes a precision/recall report.
+Emits a predicted regions table that supersets define_regions.py's schema
+(extra trailing columns), so it can feed extract_methods.py for precursors with
+no known mature. When a ground-truth regions table is given, writes a
+precision/recall report.
 """
 import argparse
 import csv
@@ -60,6 +62,14 @@ def cationicity(seg):
     return sum(seg.count(x) for x in "KR") / len(seg)
 
 
+def net_anionic(seg):
+    """True if the segment is net negatively charged (D/E > K/R fraction)."""
+    if not seg:
+        return False
+    acidic = sum(seg.count(x) for x in "DE") / len(seg)
+    return acidic > cationicity(seg)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--precursors", required=True)
@@ -71,23 +81,33 @@ def main():
     ap.add_argument("--min-mature", type=int, default=5)
     ap.add_argument("--max-mature", type=int, default=120)
     ap.add_argument("--tol", type=int, default=2)
+    ap.add_argument("--no-cterm-pro", action="store_true",
+                    help="disable C-terminal pro-segment trimming")
+    ap.add_argument("--min-cterm-tail", type=int, default=3,
+                    help="shortest C-terminal pro-segment worth trimming")
     args = ap.parse_args()
 
     seqs = read_fasta(args.precursors)
     sig = read_signalp(args.signalp)
 
-    # group candidate bonds per precursor
+    # group candidate bonds per precursor: (bond, role, model_score)
     cand = {}
     with open(args.candidates) as fh:
         for row in csv.DictReader(fh, delimiter="\t"):
+            try:
+                sc = float(row.get("score", "0") or 0)
+            except ValueError:
+                sc = 0.0
             cand.setdefault(row["precursor_id"], []).append(
-                (int(row["cut_after_aa"]), row["role"]))
+                (int(row["cut_after_aa"]), row["role"], sc))
 
     predictions = {}   # precursor -> dict
     for pid, seq in seqs.items():
         se = sig.get(pid, 0)
-        best, best_score = None, -1.0
-        for bond, role in cand.get(pid, []):
+        L = len(seq)
+        # --- (b) score-aware pro->mature selection ---
+        best, best_score = None, -1e9
+        for bond, role, msc in cand.get(pid, []):
             if bond <= se:
                 continue
             mature = seq[bond:]
@@ -95,32 +115,54 @@ def main():
             if mlen < args.min_mature or mlen > args.max_mature:
                 continue
             score = (ROLE_PRIORITY.get(role, 1.0)
+                     + 3.0 * msc
                      + 2.0 * cationicity(mature)
                      + (0.5 if args.min_mature <= mlen <= 60 else 0.0))
             if score > best_score:
                 best_score, best = score, bond
-        if best is None:
-            mstart = se + 1               # fall back: everything after signal
-        else:
-            mstart = best + 1
+        mstart = (best + 1) if best is not None else (se + 1)
+
+        # --- (c) optional C-terminal pro-segment trimming ---
+        # AMP C-terminal pro-segments are characteristically ANIONIC; trim to
+        # the most C-terminal cut that leaves a net-anionic tail (removing the
+        # acidic pro while keeping the mature as long as possible).
+        mend, mend_src = L, "terminus"
+        if not args.no_cterm_pro and mstart <= L:
+            chosen = None
+            for bond, role, msc in sorted(cand.get(pid, []), key=lambda t: t[0]):
+                if bond <= mstart or (L - bond) < args.min_cterm_tail:
+                    continue
+                mature = seq[mstart - 1:bond]
+                if not (args.min_mature <= len(mature) <= args.max_mature):
+                    continue
+                tail = seq[bond:]
+                if net_anionic(tail) and cationicity(mature) > cationicity(tail):
+                    chosen = bond          # keep most C-terminal qualifying cut
+            if chosen is not None:
+                mend, mend_src = chosen, "cterm_cut"
+
         predictions[pid] = {
             "signal_end": se,
             "pro_start": se + 1 if mstart - 1 >= se + 1 else 0,
             "pro_end": mstart - 1 if mstart - 1 >= se + 1 else 0,
             "mature_start": mstart,
-            "mature_end": len(seq),
-            "precursor_len": len(seq),
+            "mature_end": mend,
+            "precursor_len": L,
+            "sel_score": best_score if best is not None else 0.0,
+            "mature_end_source": mend_src,
         }
 
     with open(args.out, "w", newline="") as out:
         w = csv.writer(out, delimiter="\t")
         w.writerow(["peptide_id", "precursor_id", "gene_symbol", "precursor_len",
                     "signal_end", "mature_start", "mature_end",
-                    "pro_start", "pro_end", "dibasic_hint"])
+                    "pro_start", "pro_end", "dibasic_hint",
+                    "sel_score", "mature_end_source"])
         for pid, p in sorted(predictions.items()):
             w.writerow([pid + "_pred", pid, ".", p["precursor_len"],
                         p["signal_end"], p["mature_start"], p["mature_end"],
-                        p["pro_start"], p["pro_end"], "."])
+                        p["pro_start"], p["pro_end"], ".",
+                        f"{p['sel_score']:.3f}", p["mature_end_source"]])
 
     # Benchmark against ground truth
     if args.truth and args.accuracy:
@@ -136,7 +178,7 @@ def main():
             pred_ms = predictions[pid]["mature_start"]
             hit = abs(pred_ms - true_ms) <= args.tol
             any_cand = any(abs(b - true_ms) <= args.tol
-                           for b, _ in cand.get(pid, []))
+                           for b, _r, _s in cand.get(pid, []))
             exact += hit
             covered += any_cand
             rows.append([pid, true_ms, pred_ms, int(hit), int(any_cand)])

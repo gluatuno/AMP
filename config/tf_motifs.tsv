@@ -1,0 +1,15 @@
+# Curated transcription-factor binding motifs (IUPAC consensus) relevant to
+# AMP / host-defense regulation. Used to look for SHARED promoter signatures
+# between an AMP gene and its processing-enzyme gene.
+# Columns: tf_name  iupac_consensus  note
+# IUPAC: R=AG Y=CT S=GC W=AT K=GT M=AC B=CGT D=AGT H=ACT V=ACG N=ACGT
+# NOTE: consensus scan is a starting point; drop in JASPAR PWMs + FIMO for rigor.
+VDR_RXR_DR3	AGGTCANNNAGGTCA	vitamin-D response element; drives CAMP/cathelicidin
+NFKB_RELA	GGGRNNYYCC	NF-kappaB; beta-defensins (DEFB) and inflammatory AMPs
+CEBP	TTGCGCAA	C/EBPbeta; myeloid AMP expression
+AP1	TGASTCA	AP-1 (Jun/Fos); stress/immune induction
+STAT_GAS	TTCNNNGAA	STAT (GAS element); IFN-driven induction
+ISRE_IRF	AGTTTCNNTTTC	IRF/ISRE; interferon-stimulated response
+HNF4	AGGTCAAAGGTCA	nuclear receptor DR1; gut epithelial AMPs
+# Keep consensus motifs >= 7 bp: shorter ones (e.g. a 5 bp NFAT core) match too
+# often to be informative in a consensus scan. Use JASPAR PWMs + FIMO for those.

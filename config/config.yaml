@@ -40,3 +40,11 @@ enzyme_table: "config/processing_enzymes.tsv"
 
 # Curated protease cleavage-site signatures used by the cleavage module.
 protease_motifs: "config/protease_motifs.tsv"
+
+# --- Cis-regulatory / TFBS layer ------------------------------------------
+# Shared promoter signatures between each AMP gene and its processing enzyme.
+tf_motifs: "config/tf_motifs.tsv"
+regulatory:
+  promoter_upstream: 1000     # bp upstream of the TSS
+  promoter_downstream: 200    # bp downstream of the TSS
+  tfbs_max_mismatch: 1        # IUPAC mismatches tolerated per site
