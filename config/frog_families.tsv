@@ -1,0 +1,13 @@
+# Frog AMP family -> typical source genus, to route APD entries whose metadata
+# names only a family or gives an ambiguous organism. Matched (case-insensitive)
+# against the peptide name / APD family / description.
+# Columns: family_regex              genus        note
+magainin|PGLa|CPF|caerulein|XPF|xenopsin	Xenopus	Pipidae skin peptides
+brevinin|ranatuerin|ranalexin|nigrocin|japonicin|gaegurin	Rana	Ranidae
+esculentin	Pelophylax	often genome-less; maps only under cross-species mode
+temporin	Rana	Ranidae (also Hyla)
+bombinin|maximin	Bombina	Bombinatoridae
+buforin|buforII	Bufo	Bufonidae stomach/skin
+dermaseptin|phylloseptin|dermorphin|deltorphin|dermatoxin	Phyllomedusa	Phyllomedusidae (no ref genome)
+odorranain|odorana	Odorrana	no ref genome
+distinctin|plasticin	Phyllomedusa	no ref genome

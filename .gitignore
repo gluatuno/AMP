@@ -3,6 +3,8 @@ resources/*
 !resources/.gitkeep
 results/*
 !results/.gitkeep
+resources_frog/
+results_frog/
 
 # Conda / Snakemake internals
 .snakemake/

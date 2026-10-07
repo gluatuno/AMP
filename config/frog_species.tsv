@@ -1,0 +1,14 @@
+# Frog species with a sequenced genome -> genome assembly for AMP mapping.
+# VERIFY accessions before running (assembly versions change). Fetch with the
+# NCBI `datasets` CLI: datasets download genome accession <ACCESSION>.
+# has_genome=yes species are mapping targets; a genus column routes AMPs whose
+# APD record names only the genus, or whose family implies it.
+# Columns: species            taxid   genus       accession          assembly            has_genome  notes
+Xenopus tropicalis	8364	Xenopus	GCF_000004195.4	UCB_Xtro_10.0	yes	best-annotated frog; magainin/PGLa/CPF/XPF
+Xenopus laevis	8355	Xenopus	GCF_017654675.1	Xenopus_laevis_v10.1	yes	allotetraploid; original magainins
+Rana temporaria	8407	Rana	GCF_905171775.1	aRanTem1.1	yes	brevinin/temporin/esculentin families
+Nanorana parkeri	125878	Nanorana	GCF_000935625.1	ASM93562v1	yes	high-altitude frog
+Bufo bufo	8384	Bufo	GCF_905171765.1	aBufBuf1.1	yes	buforin source genus
+Bombina bombina	8345	Bombina	GCA_027579735.1	aBomBom1	partial	bombinins/maximins; large genome, verify
+# Genome-less genera commonly seen in APD frog entries (AMPs set aside, not mapped):
+# Phyllomedusa (dermaseptins/phylloseptins), Pelophylax (esculentins; use Rana as proxy only if you accept cross-species), Hyla, Odorrana, Hylarana, Agalychnis
