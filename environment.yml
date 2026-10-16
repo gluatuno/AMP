@@ -4,7 +4,8 @@ channels:
   - bioconda
 dependencies:
   - python>=3.10
-  - snakemake-minimal>=7.32
+  - snakemake-minimal>=8.4           # v8 needed for the SLURM executor plugin
+  - snakemake-executor-plugin-slurm  # per-rule sbatch submission (HCC profile)
   - diamond>=2.1          # peptide -> precursor homology search
   - miniprot>=0.13        # splice-aware protein -> genome alignment
   - samtools>=1.19        # faidx on the reference genome

@@ -1,0 +1,72 @@
+# Snakemake 8+ SLURM executor profile for HCC (Holland Computing Center).
+# Each rule is submitted as its own sbatch job with the resources below.
+#
+# Usage (from the repo root, inside the conda env):
+#   snakemake --profile hcc/profiles/slurm
+# Run the controlling snakemake inside hcc/controller.slurm (or tmux on login).
+#
+# EDIT before first run:
+#   * slurm_partition : your cluster's partition (HCC Swan default: "batch")
+#   * slurm_account   : set only if your HCC group requires -A <group>
+#   * mem_mb / runtime: tuned here for a human-scale genome; lower for frog etc.
+
+executor: slurm
+jobs: 50                 # max concurrent cluster jobs
+use-conda: true
+conda-frontend: mamba
+rerun-incomplete: true
+keep-going: true
+printshellcmds: true
+latency-wait: 60         # NFS/Lustre metadata lag after a job finishes
+
+default-resources:
+  slurm_partition: "batch"
+  # slurm_account: "YOUR_GROUP"   # uncomment + set if required
+  cpus_per_task: 1
+  mem_mb: 4000
+  runtime: 120           # minutes
+
+# Multi-threaded rules: keep threads == cpus_per_task below.
+set-threads:
+  miniprot_index: 16
+  miniprot_align: 16
+  diamond_makedb: 8
+  diamond_blastp: 16
+  signalp: 4
+  cluster_input: 8
+
+set-resources:
+  # --- reference downloads (network-bound, single thread, generous time) ---
+  download_genome:
+    mem_mb: 4000
+    runtime: 240
+  download_gff3:
+    mem_mb: 4000
+    runtime: 120
+  download_uniprot:
+    mem_mb: 4000
+    runtime: 120
+  index_genome:
+    mem_mb: 8000
+    runtime: 60
+  # --- heavy compute ---
+  miniprot_index:
+    cpus_per_task: 16
+    mem_mb: 48000        # whole-genome protein index
+    runtime: 240
+  miniprot_align:
+    cpus_per_task: 16
+    mem_mb: 32000
+    runtime: 180
+  diamond_makedb:
+    cpus_per_task: 8
+    mem_mb: 8000
+    runtime: 60
+  diamond_blastp:
+    cpus_per_task: 16
+    mem_mb: 16000
+    runtime: 120
+  signalp:
+    cpus_per_task: 4
+    mem_mb: 8000
+    runtime: 180
