@@ -103,9 +103,9 @@ def main():
                         f"{a:.3f}" if a == a else "NA",
                         f"{d:+.3f}" if d == d else "NA"])
 
-    # --- deployable (M1 only) + full (M1-5) models ---
+    # --- deployable (M1 only) + full (M1-6) models ---
     m1_cols = cumulative_columns("M1", example)
-    full_cols = cumulative_columns("M5", example)
+    full_cols = cumulative_columns(LEVELS[-1], example)
     m1_model = fit_model(matrix(rows, m1_cols), y, args.seed, use_sk)
     full_model = fit_model(matrix(rows, full_cols), y, args.seed, use_sk)
     for name, mdl, cols in [("model_M1", m1_model, m1_cols),
@@ -120,9 +120,9 @@ def main():
         w.writerow(["n_positive", sum(y)])
         w.writerow(["n_negative", len(y) - sum(y)])
         w.writerow(["auc_M1_peptide_only", f"{results[0][2]:.3f}"])
-        w.writerow(["auc_M1-5_full_context", f"{results[-1][2]:.3f}"])
+        w.writerow([f"auc_full_{results[-1][0]}", f"{results[-1][2]:.3f}"])
         gain = results[-1][2] - results[0][2]
-        w.writerow(["context_gain_auc", f"{gain:+.3f}" if gain == gain else "NA"])
+        w.writerow(["total_gain_auc", f"{gain:+.3f}" if gain == gain else "NA"])
     sys.stderr.write(f"train_ablation: M1={results[0][2]:.3f} "
                      f"M1-5={results[-1][2]:.3f} backend="
                      f"{'sklearn' if use_sk else 'ml_lite'}\n")

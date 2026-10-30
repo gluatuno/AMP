@@ -10,3 +10,8 @@ dependencies:
   - pandas>=2.0
   # Plotting the ablation/ROC is optional:
   # - matplotlib>=3.7
+  # Method 6 real embedding backends (stub needs none). Heavy; GPU recommended:
+  # - pytorch>=2.0
+  # - pip:
+  #   - fair-esm          # ESM-2 protein LM  (--backend esm2)
+  #   - transformers      # DNA LM / Nucleotide Transformer (--backend nt)

@@ -3,6 +3,8 @@
 D = config["dataset"]
 M = config["model"]
 PR = config["predict"]
+EMB = M.get("embeddings", {}) or {}
+USE_EMB = bool(EMB.get("enabled", False))
 
 rule predict_make_dataset:
     input:
@@ -23,9 +25,52 @@ rule predict_make_dataset:
             --out {output.tsv}
         """
 
+# --- Method 6: foundation-model embeddings -> feature table ----------------
+# Produces dataset_features.tsv (dataset + m6p_*/m6g_* columns when enabled,
+# else a straight copy). train_ablation picks up M6 automatically.
+if USE_EMB:
+    rule predict_m6_features:
+        input:
+            tsv = OUT + "/dataset.tsv",
+        output:
+            feat = OUT + "/dataset_features.tsv",
+        conda: "../envs/predict.yaml"
+        params:
+            backend = EMB.get("backend", "stub"),
+            pdim = EMB.get("protein_dim", 32),
+            ddim = EMB.get("dna_dim", 32),
+            locus = EMB.get("locus_fasta", ""),
+        shell:
+            r"""
+            d={OUT}/m6; mkdir -p $d
+            # protein embedding (M6p) over every row's mature sequence
+            awk -F'\t' 'NR>1{{print ">"$1"\n"$3}}' {input.tsv} > $d/seqs.faa
+            python workflow/scripts/embed_sequences.py --fasta $d/seqs.faa \
+                --kind protein --backend {params.backend} --dim {params.pdim} \
+                --out $d/m6p.tsv
+            EMB_ARGS="$d/m6p.tsv"
+            # optional DNA embedding (M6g) over a provided locus FASTA
+            if [ -n "{params.locus}" ] && [ -f "{params.locus}" ]; then
+                python workflow/scripts/embed_sequences.py --fasta {params.locus} \
+                    --kind dna --backend {params.backend} --dim {params.ddim} \
+                    --out $d/m6g.tsv
+                EMB_ARGS="$EMB_ARGS $d/m6g.tsv"
+            fi
+            python workflow/scripts/merge_embeddings.py --dataset {input.tsv} \
+                --emb $EMB_ARGS --out {output.feat}
+            """
+else:
+    rule predict_passthrough_features:
+        input:
+            tsv = OUT + "/dataset.tsv",
+        output:
+            feat = OUT + "/dataset_features.tsv",
+        shell:
+            "cp {input.tsv} {output.feat}"
+
 rule predict_train_ablation:
     input:
-        tsv = OUT + "/dataset.tsv",
+        tsv = OUT + "/dataset_features.tsv",
     output:
         abl = OUT + "/model/ablation.tsv",
         met = OUT + "/model/metrics.tsv",

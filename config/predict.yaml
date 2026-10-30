@@ -24,6 +24,14 @@ dataset:
 model:
   cv_folds: 5
   seed: 0
+  # Method 6 — foundation-model embeddings (added as m6p_* / m6g_* columns).
+  embeddings:
+    enabled: true
+    backend: "stub"      # stub (no deps/offline) | esm2 (protein) | nt (DNA)
+    protein_dim: 32      # stub/output dim for the protein embedding (M6p)
+    dna_dim: 32          # stub/output dim for the DNA embedding (M6g)
+    # Optional DNA locus FASTA (id -> gene+-promoter DNA) for M6g; '' skips M6g.
+    locus_fasta: ""
 
 predict:
   query_fasta: "data/predict/query.faa"

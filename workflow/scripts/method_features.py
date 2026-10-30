@@ -88,6 +88,15 @@ def compute(fields):
     feats.update(_passthrough(fields, M4_KEYS))
     # M5 locus context (genomic passthrough)
     feats.update(_passthrough(fields, M5_KEYS))
+    # M6 foundation-model embeddings: pass through any m6p_* / m6g_* columns
+    # (protein LM over peptide/precursor; DNA LM over the locus). Absent -> M6
+    # simply contributes no columns and the ablation treats it as a no-op.
+    for k, v in fields.items():
+        if k.startswith(("m6p_", "m6g_")):
+            try:
+                feats[k] = float(v) if v not in ("", None) else 0.0
+            except (TypeError, ValueError):
+                feats[k] = 0.0
     return feats
 
 
@@ -96,14 +105,16 @@ def _cols_for(prefixes, example):
 
 
 # Which feature columns belong to each Method block (prefix-based).
+# M6 = foundation-model embeddings: m6p_* (protein LM) + m6g_* (DNA LM).
 BLOCK_PREFIXES = {
     "M1": ["m1_", "m1_aa_"],
     "M2": ["m2pro_", "m2_"],
     "M3": ["m3prec_", "m3_"],
     "M4": M4_KEYS,
     "M5": M5_KEYS,
+    "M6": ["m6p_", "m6g_"],
 }
-LEVELS = ["M1", "M2", "M3", "M4", "M5"]
+LEVELS = ["M1", "M2", "M3", "M4", "M5", "M6"]
 
 
 def cumulative_columns(level, example):

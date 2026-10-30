@@ -15,7 +15,28 @@ Method 2  + pro-peptide             processing / anionic pro-region signal
 Method 3  + full precursor          signal peptide + pro + mature
 Method 4  + processing enzyme       convertase/protease cut score & proximity
 Method 5  + whole locus             exon structure, GC, transporter/enzyme nearby
+Method 6  + learned embeddings      foundation-model vectors (ESM-2 / DNA-LM)
 ```
+
+## Method 6 — foundation-model embeddings
+
+M6 complements the hand-crafted features with **learned representations**:
+`embed_sequences.py` encodes each sequence as a fixed-length vector that
+`merge_embeddings.py` joins onto the dataset as `m6p_*` (protein) / `m6g_*`
+(DNA) columns — the ablation then picks up M6 automatically.
+
+- **m6p** — a **protein LM** (ESM-2) over the mature peptide/precursor; sequence-only.
+- **m6g** — a **DNA LM** (Nucleotide Transformer / DNABERT) over the gene±promoter locus; needs the genome.
+
+Backends (`config/predict.yaml` → `model.embeddings.backend`):
+- **stub** (default) — deterministic k-mer-hashed vectors, no dependencies, so
+  the M6 plumbing and ablation run offline. (Composition-like; won't beat M1 —
+  it exists to verify the pipeline, not to be the real model.)
+- **esm2 / nt** — real foundation models via `fair-esm` / `transformers`
+  (need torch, model-weight downloads, and ideally a GPU — run on HCC).
+
+Turn M6 off with `model.embeddings.enabled: false`. Reduce embeddings (PCA /
+L2) and use **homology-clustered CV** before trusting an M6 gain.
 
 Run: `snakemake -s workflow/Snakefile_predict --use-conda --cores 4`
 
