@@ -1,0 +1,20 @@
+# ===========================================================================
+# Context-aware AMP predictor
+#   snakemake -s workflow/Snakefile_predict --use-conda --cores 4
+# ===========================================================================
+# Dataset -> Method 1-5 ablation + models -> predictions.
+#   stage 1 (here): sequence-in classifier + ablation + ensemble
+#   stage 2 (later): genome-wide scanner reusing results_predict/model/model_full.pkl
+# ===========================================================================
+
+configfile: "config/predict.yaml"
+
+OUT = config["outdir"]
+
+rule all:
+    input:
+        OUT + "/model/ablation.tsv",
+        OUT + "/model/metrics.tsv",
+        OUT + "/predictions.tsv",
+
+include: "rules/predict.smk"

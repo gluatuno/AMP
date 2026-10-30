@@ -1,0 +1,12 @@
+name: amp-predict
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.10
+  - snakemake-minimal>=8.4
+  - scikit-learn>=1.3    # RandomForest ablation/model (falls back to ml_lite if absent)
+  - numpy>=1.24
+  - pandas>=2.0
+  # Plotting the ablation/ROC is optional:
+  # - matplotlib>=3.7

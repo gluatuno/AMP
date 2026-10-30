@@ -1,0 +1,30 @@
+# ===========================================================================
+# Context-aware AMP predictor  (Method 1-5 ablation + ensemble + CLI)
+# ===========================================================================
+# Thesis: peptide-only features (Method 1) are what current AMP tools use.
+# Adding gene-context features (Methods 2-5: pro-peptide, precursor, processing
+# enzyme, whole locus) should improve discrimination. The workflow quantifies
+# that gain, trains a deployable sequence-only classifier, and a full-context
+# model for the (stage-2) genome scanner.
+# ===========================================================================
+
+outdir: "results_predict"
+
+dataset:
+  # Positive records (one per AMP) in the dataset schema. Build from the genome
+  # pipeline with assemble_positives.py, or supply directly.
+  positive_records: "data/predict/positives.tsv"
+  # PRIMARY negatives: real non-AMP proteins (different composition). Required
+  # for a meaningful peptide-only (M1) model.
+  neg_fasta: "data/predict/nonamp.faa"
+  # Composition-matched shuffled decoys: a HARD CONTROL, not a training set.
+  # Expect M1 AUC ~ 0.5 against these; gains must come from context Methods.
+  shuffle_per_pos: 0
+
+model:
+  cv_folds: 5
+  seed: 0
+
+predict:
+  query_fasta: "data/predict/query.faa"
+  threshold: 0.5
